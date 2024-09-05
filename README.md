@@ -1,6 +1,6 @@
 # WebSocket MultiClusters with Redis
 
-This repository hosts a robust WebSocket Gateway built with NestJS. Leveraging the power of WebSockets for real-time, bi-directional communication, this project ensures seamless connectivity across multiple instances of the gateway, functioning as a unified server.
+This repository hosts a WebSocket Gateway built with NestJS. Leveraging the power of WebSockets for real-time, bi-directional communication, this project ensures seamless connectivity across multiple instances of the gateway, functioning as a unified server.
 
 ## Getting Started
 
