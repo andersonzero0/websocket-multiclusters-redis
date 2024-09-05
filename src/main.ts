@@ -12,7 +12,7 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(redisIoAdapter);
 
-  await app.listen(process.env.PORT);
+  await app.listen(process.env.PORT || 3000);
   logger.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

@@ -3,7 +3,7 @@
 const { io } = require('socket.io-client');
 
 function createClient(id_user) {
-  const socket = io('http://localhost/events', {
+  const socket = io('http://localhost:3000/events', {
     transports: ['websocket'],
   });
 
