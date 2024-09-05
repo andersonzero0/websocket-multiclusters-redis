@@ -1,73 +1,143 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# WebSocket MultiClusters with Redis
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This repository hosts a robust WebSocket Gateway built with NestJS. Leveraging the power of WebSockets for real-time, bi-directional communication, this project ensures seamless connectivity across multiple instances of the gateway, functioning as a unified server.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Getting Started
 
-## Description
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Prerequisites
 
-## Installation
+You need to have Docker, Node.js, npm/yarn and pm2 installed on your machine.
+
+To install pm2 globally, run the following command:
 
 ```bash
-$ yarn install
+npm install pm2 -g
 ```
 
-## Running the app
+or
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+yarn global add pm2
 ```
 
-## Test
+### Installing
+
+First, start the Docker compose:
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+docker-compose up -d
 ```
 
-## Support
+Then, install the packages:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+npm install
+```
 
-## Stay in touch
+or
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+yarn
+```
 
-## License
+After that, build the project:
 
-Nest is [MIT licensed](LICENSE).
+```bash
+npm run build
+```
+
+or
+
+```bash
+yarn build
+```
+
+Finally, start the application with pm2:
+
+```bash
+pm2 start ecosystem.config.js
+```
+
+## Installing Nginx and Configuring
+
+First, you need to install Nginx. If you're using Ubuntu, you can do this with the following command:
+
+```bash
+sudo apt update
+sudo apt install nginx
+```
+
+After installing Nginx, you need to use the provided nginx.conf file. Replace the default Nginx configuration file with the provided one. You can do this with the following commands:
+
+```bash
+sudo rm /etc/nginx/nginx.conf
+sudo cp ./nginx.conf /etc/nginx/nginx.conf
+```
+
+Finally, restart Nginx to apply the changes:
+
+```bash
+sudo systemctl restart nginx
+```
+
+## Why PM2?
+
+PM2 is a production process manager for Node.js applications. In this project, it is used to create multiple instances of the application, enhancing its performance and reliability.
+
+## Why Nginx?
+
+Nginx is a high-performance HTTP server and reverse proxy. In this project, it is used to distribute incoming client requests to multiple instances of the application, effectively balancing the load and ensuring high availability and reliability.
+
+## Code Explanation
+
+The `RedisIoAdapter` class is an adapter for Redis. It connects to a Redis server and creates an IO server with the Redis adapter.
+
+The `connectToRedis` method connects to the Redis server and creates a pub/sub client. It then creates an adapter with these clients.
+
+The `createIOServer` method creates an IO server with the Redis adapter.
+
+The `bootstrap` function is the entry point of the application. It creates a NestJS application, connects to Redis, and starts the application. It uses the Redis adapter for the WebSocket server of the application.
+
+```typescript
+export class RedisIoAdapter extends IoAdapter {
+  private adapterConstructor: ReturnType<typeof createAdapter>;
+
+  async connectToRedis(): Promise<void> {
+    const pubClient = createClient({
+      url: `redis://localhost:6379`,
+      database: 0,
+    });
+    const subClient = pubClient.duplicate();
+
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+
+    this.adapterConstructor = createAdapter(pubClient, subClient);
+  }
+
+  createIOServer(port: number, options?: ServerOptions): any {
+    const server = super.createIOServer(port, options);
+    server.adapter(this.adapterConstructor);
+    return server;
+  }
+}
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+
+  const logger = new Logger('App');
+
+  app.useWebSocketAdapter(redisIoAdapter);
+
+  await app.listen(process.env.PORT || 3000);
+  logger.log(`Application is running on: ${await app.getUrl()}`);
+}
+bootstrap();
+```
+
+## Authors
+
+- **Anderson Viana** - [@andersonzer0](https://github.com/andersonzero0)
